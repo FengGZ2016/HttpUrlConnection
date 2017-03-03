@@ -2,6 +2,7 @@ package pj.gdcp.httpurlconnection;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -13,9 +14,14 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
+    private final String Tag="MainActivity";
     String urlstr = "https://www.baidu.com";
     private Button btn_load;
     private TextView webText;
@@ -45,12 +51,68 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 使用OkHttp访问网络
+     *  ①、call.execute()，非异步方式，会阻塞线程，等待返回结果。
+     *  ②、call.enqueue(Callback)，异步方式。
      * */
     private void useOkHttp() {
+        //Callexecute();
+        Callenqueue();
+
+
+    }
+
+    /**
+     * 异步方式
+     * */
+    private void Callenqueue() {
         //首先要创建一个okhttpClient的实例
         OkHttpClient client=new OkHttpClient();
-        //然后需要创建一个request对象，并通过
+        //然后需要创建一个request对象，并通过url（）的方法来设置目标的网络地址
+        Request request=new Request.Builder().url(urlstr).build();
+        //new Call
+        Call call=client.newCall(request);
+        //调用client的enqueue方法请求加入调度
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.i(Tag,"onFailure"+e.toString());
+            }
 
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                //获取响应消息体
+                 String result=response.body().string();
+                //调用更新UI的方法
+                showResponse(result);
+
+            }
+        });
+    }
+
+    /**
+     * 非异步方式，会阻塞线程，等待返回结果
+     * */
+    private void Callexecute() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //首先要创建一个okhttpClient的实例
+                OkHttpClient client=new OkHttpClient();
+                //然后需要创建一个request对象，并通过url（）的方法来设置目标的网络地址
+                Request request=new Request.Builder().url(urlstr).build();
+                //之后调用OkHttpClient的newCall()方法来创建一个Call对象，
+                // 并调用它的execute方法发送请求，获得服务器返回的数据
+                try {
+                    Response response=client.newCall(request).execute();
+                    //根据服务器返回的response对象得到消息体body
+                    String responseData=response.body().string();
+                    //调用更新UI的方法
+                    showResponse(responseData);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     /**
