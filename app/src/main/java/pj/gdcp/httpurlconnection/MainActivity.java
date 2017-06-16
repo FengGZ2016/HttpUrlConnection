@@ -1,11 +1,21 @@
 package pj.gdcp.httpurlconnection;
 
+import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,15 +32,46 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private final String Tag="MainActivity";
-    String urlstr = "https://www.baidu.com";
+    String urlstr = "http://a1.gdcp.cn/DocHtml/2390/2017/4/27/2078824639837.html";
     private Button btn_load;
     private TextView webText;
+    private Handler mHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initHandler();
         initView();
+    }
+
+    private void initHandler() {
+        mHandler=new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                //在这里更新ui
+            if(msg.what==1){
+                String webContent= (String) msg.obj;
+                analyseHTML(webContent);
+               // showResponse(webContent);
+            }
+            }
+        };
+    }
+
+    /**
+     * 解析HTML
+     *
+     * @param webContent*/
+    private void analyseHTML(String webContent) {
+        if(webContent!=null){
+            Document document= Jsoup.parse(webContent);
+           Element element= document.body();
+            String elementStr=element.text();
+            webText.setText(elementStr);
+        }
+
     }
 
     private void initView() {
@@ -42,8 +83,8 @@ public class MainActivity extends AppCompatActivity {
         btn_load.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //useHttpUrl();
-                useOkHttp();
+                useHttpUrl();
+               // useOkHttp();
 
             }
         });
@@ -149,7 +190,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                     //把字符缓冲区里的内容转换为字符串
                     final String webContent = buffer.toString();
-                    showResponse(webContent);
+                    Message msg=new Message();
+                    msg.obj=webContent;
+                    msg.what=1;
+                    //到主线程去解析数据，更新UI
+                    mHandler.sendMessage(msg);
+
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -197,4 +243,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    /**
+     * 检查网络是否可用
+     *
+     */
+    private boolean isNetworkAvailable(Activity activity){
+        Context context=activity.getApplicationContext();
+        ConnectivityManager manager= (ConnectivityManager) context.getSystemService(context.CONNECTIVITY_SERVICE);
+        if (manager==null){
+            return false;
+        }else {
+            // 获取所有NetworkInfo对象
+            NetworkInfo[] networkinfos=manager.getAllNetworkInfo();
+            if (networkinfos!=null&&networkinfos.length>0){
+                for (int i=0;i<networkinfos.length;i++){
+                    if (networkinfos[i].getState()==NetworkInfo.State.CONNECTED){
+                        //存在可用的网络
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+    }
+
+
 }
