@@ -89,6 +89,42 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    /**
+     * 调用工具类的sendHttpRequest方法
+     * */
+    private void sendHttpRequest(){
+
+        HttpUtil.sendHttpRequest("", new HttpCallbackListener() {
+            @Override
+            public void onFinish(String response) {
+                //访问网络成功，response为响应消息
+
+            }
+
+            @Override
+            public void onError(Exception e) {
+                //访问网络失败
+            }
+        });
+    }
+
+    /**
+     * 调用工具类的sendOkHttpRequest方法
+     * */
+    private void sendOkHttpRequest(){
+
+        HttpUtil.sendOkHttpRequest("", new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                //访问网络失败
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                //访问网络成功，response为响应消息
+            }
+        });
+    }
 
     /**
      * 使用OkHttp访问网络
